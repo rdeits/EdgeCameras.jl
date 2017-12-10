@@ -121,4 +121,15 @@ function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0)
     end
 end
 
+function sample(im, samples, H)
+    itp = interpolate(imfilter(im, Kernel.gaussian(5)), BSpline(Linear()), OnGrid())
+    [itp[Tuple(H(s))...] for s in samples]
+end
+
+function imnormal(im)
+    lb = minimum(x -> min(red(x), green(x), blue(x)), im)
+    ub = maximum(x -> max(red(x), green(x), blue(x)), im)
+    (im .- RGB(lb, lb, lb)) ./ (ub - lb)
+end
+
 end
