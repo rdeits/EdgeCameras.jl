@@ -6,17 +6,7 @@ using StaticArrays: SVector, SMatrix
 using CoordinateTransformations
 using Unitful
 
-function mean_frame(video::VideoReader, framerate, time_range)
-    seek(video, convert(Float64, time_range[1] / (1u"s")))
-    buf = read(video)
-    total = RGB{Float32}.(copy(buf))
-    num_frames = round(Int, (time_range[2] - time_range[1]) * framerate)
-    for i in 2:num_frames
-        read!(video, buf)
-        total .+= buf
-    end
-    total ./ (num_frames)
-end
+framerate(v::VideoReader) = v.stream_info.stream.avg_frame_rate.num / (v.stream_info.stream.avg_frame_rate.den * u"s")
 
 struct Homography2D{T, M <: AbstractMatrix{T}} <: Transformation
   H::M
@@ -49,6 +39,8 @@ function rectify(original_corners, desired_corners)
     Homography2D(SMatrix{3, 3}(H))
 end
 
+polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
+
 function visibility_gain(samples, θs)
     N = length(θs)
     M = length(samples)
@@ -62,23 +54,17 @@ function visibility_gain(samples, θs)
     A
 end
 
-# function visibility_gain(frame_size, θs)
-#     h, w = frame_size
-#     M = h * w
-#     N = length(θs)
-#     A = zeros(N0f8, h, w, N)
-#     for n in 1:N
-#         θ = θs[n]
-#         for j in 1:w
-#             for i in 1:h
-#                 ρ = atan2(j, i)
-#                 A[i, j, n] = ρ >= θ
-#             end
-#         end
-#     end
-#     A
-# end
-
-# function estimate_scene(
+function mean_frame(video::VideoReader, time_range)
+    rate = framerate(video)
+    seek(video, convert(Float64, time_range[1] / (1u"s")))
+    buf = read(video)
+    total = RGB{Float32}.(copy(buf))
+    num_frames = round(Int, (time_range[2] - time_range[1]) * rate)
+    for i in 2:num_frames
+        read!(video, buf)
+        total .+= buf
+    end
+    total ./ (num_frames)
+end
 
 end
