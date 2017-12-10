@@ -4,6 +4,7 @@ using Images
 using VideoIO: openvideo, VideoReader
 using StaticArrays: SVector, SMatrix
 using CoordinateTransformations
+using Interpolations
 using Unitful
 
 framerate(v::VideoReader) = v.stream_info.stream.avg_frame_rate.num / (v.stream_info.stream.avg_frame_rate.den * u"s")
@@ -41,6 +42,12 @@ end
 
 polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
 
+struct Params{Tθ, TS}
+    θs::Tθ
+    samples::TS
+    σ::Float64
+end
+
 function visibility_gain(samples, θs)
     N = length(θs)
     M = length(samples)
@@ -54,6 +61,39 @@ function visibility_gain(samples, θs)
     A
 end
 
+function cornercam_gain(A::AbstractMatrix, σ, λ)
+    Ã = hcat(ones(size(A, 1)), A)
+
+    G = I - diagm(ones(size(Ã, 2) - 1), 1)
+    G = G[1:end-1, :]
+    G[1, :] = 0
+
+    c = eye(size(G, 2))
+    c[1, :] = 0
+
+    R = Tridiagonal((G' * G + c)) / σ^2
+
+    Σinv = Ã' * Ã / λ^2 + R
+    gain = (Σinv \ (Ã' / λ^2));
+end
+
+struct CornerCamera{S <: VideoReader, H <: Homography2D, M <: AbstractArray, P <: Params}
+    source::S
+    homography::H
+    background::M
+    params::P
+end
+
+function show_samples(c::CornerCamera)
+    im = desaturate.(c.background)
+    color = interpolate([RGB(1., 0, 0), RGB(0., 0, 1)], BSpline(Linear()), OnGrid())
+    for (i, s) in enumerate(c.params.samples)
+        pixel = c.homography(s)
+        mark!(im, pixel, 1, color[1 + i / length(c.params.samples)])
+    end
+    im
+end
+
 function mean_frame(video::VideoReader, time_range)
     rate = framerate(video)
     seek(video, convert(Float64, time_range[1] / (1u"s")))
@@ -65,6 +105,20 @@ function mean_frame(video::VideoReader, time_range)
         total .+= buf
     end
     total ./ (num_frames)
+end
+
+function desaturate(px::RGB)
+    g = gray(Gray(px))
+    RGB(g, g, g)
+end
+
+function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0))
+    for dx in -radius:radius
+        for dy in -radius:radius
+            p = round.(Int, center .+ SVector(dx, dy))
+            im[Tuple(p)...] = color
+        end
+    end
 end
 
 end
