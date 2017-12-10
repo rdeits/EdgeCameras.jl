@@ -7,7 +7,34 @@ using CoordinateTransformations
 using Interpolations
 using Unitful
 
+
+struct TransformedVideo{F <: Function, R <: VideoReader, M <: AbstractArray}
+    transform::F
+    video::R
+    buffer::M
+end
+
+function TransformedVideo(f::Function, v::VideoReader)
+    buf = read(v)
+    TransformedVideo(f, v, buf)
+end
+
+Base.seek(v::TransformedVideo, s) = seek(v.video, s)
+
+function Base.read(v::TransformedVideo)
+    read!(v.video, v.buffer)
+    v.transform(v.buffer)
+end
+
+function Base.read!(v::TransformedVideo, out::AbstractArray)
+    read!(v.video, v.buffer)
+    out .= v.transform(v.buffer)
+end
+
 framerate(v::VideoReader) = v.stream_info.stream.avg_frame_rate.num / (v.stream_info.stream.avg_frame_rate.den * u"s")
+framerate(v::TransformedVideo) = framerate(v.video)
+
+const AbstractVideo = Union{VideoReader, TransformedVideo}
 
 struct Homography2D{T, M <: AbstractMatrix{T}} <: Transformation
   H::M
@@ -77,7 +104,7 @@ function cornercam_gain(A::AbstractMatrix, σ, λ)
     gain = (Σinv \ (Ã' / λ^2));
 end
 
-struct CornerCamera{S <: VideoReader, H <: Homography2D, M <: AbstractArray, P <: Params}
+struct CornerCamera{S <: AbstractVideo, H <: Homography2D, M <: AbstractArray, P <: Params}
     source::S
     homography::H
     background::M
@@ -94,17 +121,11 @@ function show_samples(c::CornerCamera)
     im
 end
 
-function mean_frame(video::VideoReader, time_range)
+function frames_between(video::AbstractVideo, time_range::Tuple)
     rate = framerate(video)
     seek(video, convert(Float64, time_range[1] / (1u"s")))
-    buf = read(video)
-    total = RGB{Float32}.(copy(buf))
     num_frames = round(Int, (time_range[2] - time_range[1]) * rate)
-    for i in 2:num_frames
-        read!(video, buf)
-        total .+= buf
-    end
-    total ./ (num_frames)
+    return (read(video) for i in 1:num_frames)
 end
 
 function desaturate(px::RGB)
@@ -122,7 +143,7 @@ function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0)
 end
 
 function sample(im, samples, H)
-    itp = interpolate(imfilter(im, Kernel.gaussian(5)), BSpline(Linear()), OnGrid())
+    itp = interpolate(im, BSpline(Linear()), OnGrid())
     [itp[Tuple(H(s))...] for s in samples]
 end
 
