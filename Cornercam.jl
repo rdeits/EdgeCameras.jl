@@ -6,7 +6,8 @@ using StaticArrays: SVector, SMatrix
 using CoordinateTransformations
 using Interpolations
 using Unitful
-
+using Parameters: @with_kw
+using IterTools: takenth
 
 struct TransformedVideo{F <: Function, R <: VideoReader, M <: AbstractArray}
     transform::F
@@ -50,7 +51,11 @@ Base.inv(H::Homography2D) = Homography2D(inv(H.H))
     SVector(xprime[1] * scale, xprime[2] * scale)
 end
 
-function rectify(original_corners, desired_corners)
+function rectify(original_corners, 
+                 desired_corners = [[0, 0], 
+                                    [0, 1],
+                                    [1, 1],
+                                    [1, 0]])
     @assert length(original_corners) == length(desired_corners)
     N = length(original_corners)
     A = zeros(8, 8)
@@ -69,10 +74,10 @@ end
 
 polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
 
-struct Params{Tθ, TS}
-    θs::Tθ
-    samples::TS
-    σ::Float64
+@with_kw struct Params{Tθ, TS}
+    θs::Tθ = linspace(0, π/2, 200)
+    samples::TS = polar_samples(linspace(0, π/2, 200), linspace(0.01, 1, 50))
+    σ::Float64 = 0.085
 end
 
 function visibility_gain(samples, θs)
@@ -109,6 +114,13 @@ struct CornerCamera{S <: AbstractVideo, H <: Homography2D, M <: AbstractArray, P
     homography::H
     background::M
     params::P
+    gain::Matrix{Float64}
+end
+
+function CornerCamera(source::S, homography::H, background::M, params::P, λ) where {S, H, M, P}
+    A = visibility_gain(params.samples, params.θs)
+    gain = Cornercam.cornercam_gain(A, params.σ, λ)
+    CornerCamera{S, H, M, P}(source, homography, background, params, gain)
 end
 
 function show_samples(c::CornerCamera)
@@ -142,9 +154,9 @@ function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0)
     end
 end
 
-function sample(im, samples, H)
+function sample(cam::CornerCamera, im)
     itp = interpolate(im, BSpline(Linear()), OnGrid())
-    [itp[Tuple(H(s))...] for s in samples]
+    [itp[Tuple(cam.homography(s))...] for s in cam.params.samples]
 end
 
 function imnormal(im)
@@ -152,5 +164,19 @@ function imnormal(im)
     ub = maximum(x -> max(red(x), green(x), blue(x)), im)
     (im .- RGB(lb, lb, lb)) ./ (ub - lb)
 end
+
+function trace(cam::CornerCamera, time_range::Tuple, frame_skip=6)
+    frames = takenth(frames_between(cam.source, time_range), frame_skip)
+    background_samples = sample(cam, cam.background)
+    map(frames) do frame
+        pixels = sample(cam, frame)
+        pixels .-= background_samples
+        y = reshape(pixels, :)
+        Lvx =  cam.gain *  y
+        x = Lvx[2:end]
+        x
+    end
+end
+
 
 end
