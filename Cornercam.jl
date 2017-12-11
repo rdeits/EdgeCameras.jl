@@ -186,7 +186,6 @@ function fuzzy_sample(im::AbstractMatrix, pt, σ, radius::Integer)
     weight_x::T = zero(T)
     total_x::C = zero(C)
     scale = -1/(2σ^2)
-    dy_range =
     for dx in max(-radius, first(indices(im, 2))):min(radius, last(indices(im, 2)))
         x = round(Int, x0 + dx)
         weight_y::T = zero(T)
