@@ -15,6 +15,7 @@ using CoordinateTransformations
 using Unitful
 using Parameters: @with_kw
 using AxisArrays
+using Interpolations: interpolate, BSpline, Linear, OnGrid, AbstractInterpolation
 
 include("types.jl")
 include("homography.jl")

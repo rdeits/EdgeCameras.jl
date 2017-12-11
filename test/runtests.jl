@@ -57,6 +57,18 @@ using Images
         end
     end
 
+    @testset "interpolated exponential" begin
+        σ = 3.0
+        radius = 6
+        blur = CornerCameras.OffGridBlur(σ, radius)
+        for offset in linspace(-0.5, 0.5, 11)
+            @test isapprox(CornerCameras.weights(blur, offset),
+                           CornerCameras.weights(σ, radius, offset),
+                           rtol=1e-3,
+                           atol=1e-2)
+        end
+    end
+
     @testset "blurred_sample" begin
         # Test that the lazy blurred samples produce the same 
         # result as blurring the image and then sampling (at least
@@ -68,18 +80,18 @@ using Images
         im = rand(RGB{Float32}, 100, 100)
         σ = 3.0
         kernel = Kernel.gaussian(σ)
-        radius = (length(indices(kernel, 1)) - 1 ÷ 2)
+        radius = (length(indices(kernel, 1)) - 1) ÷ 2
         filtered = imfilter(im, kernel)
 
         # Now generate what should be an identical image by 
         # generating a lazy blurred sample at *every* coordinate:
-        blur = CornerCameras.OffGridBlur{radius}(σ)
+        blur = CornerCameras.OffGridBlur(σ, radius)
         sampled = CornerCameras.sample_blurred.(
             (im,),
             collect(CartesianRange((100, 100))),
             (blur,))
 
         # Verify that the images are the same (away from the boundary)
-        @test maximum(abs.(sampled[10:90, 10:90] .- filtered[10:90, 10:90])) < 2e-2
+        @test maximum(abs.(sampled[10:90, 10:90] .- filtered[10:90, 10:90])) < 1e-6
     end
 end
