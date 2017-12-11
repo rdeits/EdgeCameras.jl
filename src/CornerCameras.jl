@@ -1,4 +1,4 @@
-module Cornercam
+module CornerCameras
 
 export show_samples,
        imnormal,
@@ -28,29 +28,36 @@ function visibility_gain(samples, θs)
     for (j, θ) in enumerate(θs)
         for (i, sample) in enumerate(samples)
             ρ = atan2(sample[2], sample[1])
-            A[i, j] = ρ > θ
+            A[i, j] = ρ >= θ
         end
     end
     A
 end
 
+# Rather than computing G and then G' * G separately, we
+# can just directly compute G'G as a Tridiagonal matrix. 
+# See the tests for verification of this approach.
+function G_times_G(m::Integer)
+    off_diag = vcat(0.0, fill(-1.0, m - 2))
+    Tridiagonal(off_diag,
+                vcat(0.0, 1.0, fill(2.0, m - 3), 1.0),
+                off_diag)
+end
+
+function regularizer(m::Integer, σ)
+    G′G = G_times_G(m)
+    c = Diagonal(vcat(0.0, fill(1.0, m - 1)))
+    R = (G′G + c) / σ^2
+end
+
 function cornercam_gain(A::AbstractMatrix, σ, λ)
     Ã = hcat(ones(size(A, 1)), A)
-
-    G = I - diagm(ones(size(Ã, 2) - 1), 1)
-    G = G[1:end-1, :]
-    G[1, :] = 0
-
-    c = eye(size(G, 2))
-    c[1, :] = 0
-
-    R = Tridiagonal((G' * G + c)) / σ^2
-
+    R = regularizer(size(Ã, 2), σ)
     Σinv = Ã' * Ã / λ^2 + R
     gain = (Σinv \ (Ã' / λ^2));
 end
 
-function trace(cam::CornerCamera, time_range::Tuple, target_rate=framerate(cam.source))
+function reconstruct(cam::CornerCamera, time_range::Tuple, target_rate=framerate(cam.source))
     seek(cam.source, convert(Float64, time_range[1] / (1u"s")))
 
     background_samples = sample(cam, cam.background, cam.params.blur)

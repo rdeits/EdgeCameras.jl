@@ -26,7 +26,7 @@ end
 
 function CornerCamera(source::S, homography::H, background::M, params::P, λ) where {S, H, M, P}
     A = visibility_gain(params.samples, params.θs)
-    gain = Cornercam.cornercam_gain(A, params.σ, λ)
+    gain = cornercam_gain(A, params.σ, λ)
     CornerCamera{S, H, M, P}(source, homography, background, params, gain)
 end
 
