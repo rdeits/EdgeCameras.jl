@@ -154,9 +154,10 @@ function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0)
     end
 end
 
-function sample(cam::CornerCamera, im)
-    itp = interpolate(im, BSpline(Linear()), OnGrid())
-    [itp[Tuple(cam.homography(s))...] for s in cam.params.samples]
+function sample(cam::CornerCamera, im, σ=5.0, radius=ceil(Int, 2σ))
+    [fuzzy_sample(im, cam.homography(s), σ, radius) for s in cam.params.samples]
+    # itp = interpolate(im, BSpline(Linear()), OnGrid())
+    # [itp[Tuple(cam.homography(s))...] for s in cam.params.samples]
 end
 
 function imnormal(im)
@@ -177,6 +178,34 @@ function trace(cam::CornerCamera, time_range::Tuple, frame_skip=6)
         x
     end
 end
+
+function fuzzy_sample(im::AbstractMatrix, pt, σ, radius::Integer)
+    y0, x0 = pt
+    T = promote_type(typeof(σ), Float64)
+    C = promote_type(eltype(im), RGB{Float64})
+    weight_x::T = zero(T)
+    total_x::C = zero(C)
+    scale = -1/(2σ^2)
+    dy_range =
+    for dx in max(-radius, first(indices(im, 2))):min(radius, last(indices(im, 2)))
+        x = round(Int, x0 + dx)
+        weight_y::T = zero(T)
+        total_y::C = zero(C)
+        @inbounds for dy in max(-radius, first(indices(im, 1))):min(radius, last(indices(im, 1)))
+            y = round(Int, y0 + dy)
+            w_y = exp(scale * (y - y0)^2)
+            weight_y += w_y
+            total_y += w_y * im[y, x]
+        end
+        w_x = exp(-scale * (x - x0)^2)
+        weight_x += w_x
+        total_x += w_x * total_y / weight_y
+    end
+    total_x / weight_x
+end
+
+fuzzy_sample(im::AbstractMatrix, pt::CartesianIndex, σ, radius::Integer) =
+    fuzzy_sample(im, pt.I, σ, radius)
 
 
 end
