@@ -32,18 +32,18 @@ function sample_blurred(im::AbstractMatrix,
     weight_x::T = zero(T)
     total_x::C = zero(C)
     scale = -1/(2 * blur.σ^2)
-    dy_range = max(-R, first(indices(im, 1))):min(R, last(indices(im, 1)))
     ỹ = round(Int, y0)
     x̃ = round(Int, x0)
+    dx_range = max(-R, first(indices(im, 2)) - x̃):min(R, last(indices(im, 2)) - x̃)
+    dy_range = max(-R, first(indices(im, 1)) - ỹ):min(R, last(indices(im, 1)) - ỹ)
     y_weights = weights(blur, y0)
-    dy_idx_offset = max(first(indices(im, 1)) - (ỹ - R), 0)
-    for dx in max(-R, first(indices(im, 2))):min(R, last(indices(im, 2)))
+    for dx in dx_range
         x = x̃ + dx
         weight_y::T = zero(T)
         total_y::C = zero(C)
-        @inbounds for (i, dy) in enumerate(dy_range)
+        for dy in dy_range
             y = ỹ + dy
-            w_y = y_weights[i + dy_idx_offset]
+            w_y = y_weights[dy + R + 1]
             weight_y += w_y
             total_y += w_y * im[y, x]
         end

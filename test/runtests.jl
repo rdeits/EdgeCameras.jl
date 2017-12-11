@@ -1,5 +1,6 @@
 using Base.Test
 using CornerCameras
+using Images
 
 @testset "Corner Cameras" begin
     @testset "homographies" begin
@@ -54,5 +55,31 @@ using CornerCameras
             R = CornerCameras.regularizer(m, σ)
             @test R == R_reference(m, σ)
         end
+    end
+
+    @testset "blurred_sample" begin
+        # Test that the lazy blurred samples produce the same 
+        # result as blurring the image and then sampling (at least
+        # when on-grid). 
+
+        srand(1)
+
+        # Generate a random image and blur it
+        im = rand(RGB{Float32}, 100, 100)
+        σ = 3.0
+        kernel = Kernel.gaussian(σ)
+        radius = (length(indices(kernel, 1)) - 1 ÷ 2)
+        filtered = imfilter(im, kernel)
+
+        # Now generate what should be an identical image by 
+        # generating a lazy blurred sample at *every* coordinate:
+        blur = CornerCameras.OffGridBlur{radius}(σ)
+        sampled = CornerCameras.sample_blurred.(
+            (im,),
+            collect(CartesianRange((100, 100))),
+            (blur,))
+
+        # Verify that the images are the same (away from the boundary)
+        @test maximum(abs.(sampled[10:90, 10:90] .- filtered[10:90, 10:90])) < 2e-2
     end
 end
