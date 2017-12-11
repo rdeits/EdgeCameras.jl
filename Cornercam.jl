@@ -8,6 +8,7 @@ using Interpolations
 using Unitful
 using Parameters: @with_kw
 using IterTools: takenth
+using AxisArrays
 
 struct TransformedVideo{F <: Function, R <: VideoReader, M <: AbstractArray}
     transform::F
@@ -154,10 +155,17 @@ function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0)
     end
 end
 
-function sample(cam::CornerCamera, im, σ=5.0, radius=ceil(Int, 2σ))
-    [fuzzy_sample(im, cam.homography(s), σ, radius) for s in cam.params.samples]
-    # itp = interpolate(im, BSpline(Linear()), OnGrid())
-    # [itp[Tuple(cam.homography(s))...] for s in cam.params.samples]
+function sample(cam::CornerCamera, im, blur)
+    pixels = Array{eltype(im)}(size(cam.params.samples))
+    sample!(pixels, cam, im, blur)
+    pixels
+end
+
+function sample!(pixels::AbstractArray{<:Colorant},
+                 cam::CornerCamera, im, blur)
+    pixels .= sample_blurred.((im,), 
+                              cam.homography.(cam.params.samples),
+                              blur)
 end
 
 function imnormal(im)
@@ -166,45 +174,79 @@ function imnormal(im)
     (im .- RGB(lb, lb, lb)) ./ (ub - lb)
 end
 
-function trace(cam::CornerCamera, time_range::Tuple, frame_skip=6)
-    frames = takenth(frames_between(cam.source, time_range), frame_skip)
-    background_samples = sample(cam, cam.background)
-    map(frames) do frame
-        pixels = sample(cam, frame)
+struct OffGridBlur{R, T}
+    σ::T
+    OffGridBlur{R}(σ::T) where {R, T} = new{R, T}(σ)
+end
+
+function trace(cam::CornerCamera, time_range::Tuple, blur, target_rate=framerate(cam.source))
+    seek(cam.source, convert(Float64, time_range[1] / (1u"s")))
+
+    background_samples = sample(cam, cam.background, blur)
+    pixels = copy(background_samples)
+    frame = read(cam.source)
+
+    frame_skip = max(1, round(Int, framerate(cam.source) / target_rate))
+    closest_achievable_rate = framerate(cam.source) / frame_skip
+    num_frames = round(Int, (time_range[2] - time_range[1]) * closest_achievable_rate)
+    data = Array{RGB{Float32}}(length(cam.params.θs), num_frames)
+    for i in 1:num_frames
+        sample!(pixels, cam, frame, blur)
         pixels .-= background_samples
-        y = reshape(pixels, :)
-        Lvx =  cam.gain *  y
-        x = Lvx[2:end]
-        x
+        Lvx = cam.gain * reshape(pixels, :)
+        data[:, i] .= Lvx[2:end]
+        for j in 1:frame_skip
+            read!(cam.source, frame)
+        end
+    end
+    times = time_range[1]:(1/closest_achievable_rate):time_range[2]
+    AxisArray(data, 
+              Axis{:θ}(cam.params.θs), 
+              Axis{:time}(times))
+end
+
+@generated function weights(blur::OffGridBlur{R, T}, y0) where {R, T}
+    expr = Expr(:tuple, [:(exp(scale * ($dy + y_grid_offset)^2)) for dy in -R:R]...)
+    quote
+        scale = -1/(2 * blur.σ^2)
+        ỹ = round(Int, y0)
+        y_grid_offset = ỹ - y0
+        $expr
     end
 end
 
-function fuzzy_sample(im::AbstractMatrix, pt, σ, radius::Integer)
+function sample_blurred(im::AbstractMatrix, 
+                        pt::Union{Tuple, SVector}, 
+                        blur::OffGridBlur{R, T}) where {R, T}
     y0, x0 = pt
-    T = promote_type(typeof(σ), Float64)
-    C = promote_type(eltype(im), RGB{Float64})
+    C = promote_type(eltype(im), RGB{T})
     weight_x::T = zero(T)
     total_x::C = zero(C)
-    scale = -1/(2σ^2)
-    for dx in max(-radius, first(indices(im, 2))):min(radius, last(indices(im, 2)))
-        x = round(Int, x0 + dx)
+    scale = -1/(2 * blur.σ^2)
+    dy_range = max(-R, first(indices(im, 1))):min(R, last(indices(im, 1)))
+    ỹ = round(Int, y0)
+    x̃ = round(Int, x0)
+    y_weights = weights(blur, y0)
+    dy_idx_offset = max(first(indices(im, 1)) - (ỹ - R), 0)
+    for dx in max(-R, first(indices(im, 2))):min(R, last(indices(im, 2)))
+        x = x̃ + dx
         weight_y::T = zero(T)
         total_y::C = zero(C)
-        @inbounds for dy in max(-radius, first(indices(im, 1))):min(radius, last(indices(im, 1)))
-            y = round(Int, y0 + dy)
-            w_y = exp(scale * (y - y0)^2)
+        @inbounds for (i, dy) in enumerate(dy_range)
+            y = ỹ + dy
+            w_y = y_weights[i + dy_idx_offset]
             weight_y += w_y
             total_y += w_y * im[y, x]
         end
-        w_x = exp(-scale * (x - x0)^2)
+        w_x = exp(scale * (x - x0)^2)
         weight_x += w_x
         total_x += w_x * total_y / weight_y
     end
     total_x / weight_x
 end
 
-fuzzy_sample(im::AbstractMatrix, pt::CartesianIndex, σ, radius::Integer) =
-    fuzzy_sample(im, pt.I, σ, radius)
+sample_blurred(im::AbstractMatrix, pt::CartesianIndex, args...) =
+    sample_blurred(im, pt.I, args...)
 
 
 end
