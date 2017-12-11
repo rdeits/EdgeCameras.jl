@@ -26,13 +26,6 @@ function Base.show(io::IO, mime::MIME"image/png", source::StaticSource)
     show(io, mime, im)
 end
 
-function imnormal(im::AbstractArray{C}) where C <: Colorant
-    dest = similar(im)
-    lb = minimum(x -> min(red(x), green(x), blue(x)), im)
-    ub = maximum(x -> max(red(x), green(x), blue(x)), im)
-    dest .= (im .- lb * oneunit(C)) ./ (ub - lb)
-end
-
 function show_samples(c::CornerCamera)
     im = desaturate.(c.source.background)
     cmap = x -> RGB(1 - x, 0.0, x)

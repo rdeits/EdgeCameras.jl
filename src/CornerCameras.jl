@@ -1,7 +1,6 @@
 module CornerCameras
 
 export show_samples,
-       imnormal,
        rectify,
        background,
        StaticSource,
