@@ -1,7 +1,7 @@
 module Cornercam
 
 using Images
-using VideoIO: openvideo, VideoReader
+using VideoIO: VideoReader
 using StaticArrays: SVector, SMatrix
 using CoordinateTransformations
 using Interpolations
@@ -189,12 +189,15 @@ function trace(cam::CornerCamera, time_range::Tuple, blur, target_rate=framerate
     frame_skip = max(1, round(Int, framerate(cam.source) / target_rate))
     closest_achievable_rate = framerate(cam.source) / frame_skip
     num_frames = round(Int, (time_range[2] - time_range[1]) * closest_achievable_rate)
-    data = Array{RGB{Float32}}(length(cam.params.θs), num_frames)
+    data = zeros(RGB{Float32}, length(cam.params.θs), num_frames)
     for i in 1:num_frames
         sample!(pixels, cam, frame, blur)
         pixels .-= background_samples
-        Lvx = cam.gain * reshape(pixels, :)
-        data[:, i] .= Lvx[2:end]
+        for k in 1:length(pixels)
+            for j in 1:size(data, 1)
+                data[j, i] += cam.gain[j + 1, k] * pixels[k]
+            end
+        end
         for j in 1:frame_skip
             read!(cam.source, frame)
         end
