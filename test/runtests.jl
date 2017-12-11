@@ -30,7 +30,7 @@ using CornerCameras
         @test A == LowerTriangular(ones(size(A, 1), size(A, 1)))
     end
 
-    @testset "gradient matrix" begin
+    @testset "gradient matrix and regularizer" begin
         function G_reference(m)
             G = I - diagm(ones(m - 1), 1)
             G = G[1:end-1, :]

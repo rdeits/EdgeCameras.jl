@@ -6,3 +6,6 @@ function frames_between(video::VideoReader, time_range::Tuple)
     num_frames = round(Int, (time_range[2] - time_range[1]) * rate)
     return (read(video) for i in 1:num_frames)
 end
+
+background(video::VideoReader, time_range::Tuple) = 
+    mean((RGB{Float32}.(im) for im in frames_between(video, time_range)))

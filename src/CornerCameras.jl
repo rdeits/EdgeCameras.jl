@@ -2,29 +2,29 @@ module CornerCameras
 
 export show_samples,
        imnormal,
-       rectify
+       rectify,
+       background,
+       StaticSource,
+       reconstruct
 
-using ColorTypes
-using FixedPointNumbers: N0f8
+using Colors
+import Images
 using VideoIO: VideoReader
 using StaticArrays: SVector, SMatrix
 using CoordinateTransformations
-using Interpolations
 using Unitful
 using Parameters: @with_kw
 using AxisArrays
 
 include("types.jl")
-include("visualization.jl")
 include("homography.jl")
 include("videos.jl")
 include("sampling.jl")
 
-
 function visibility_gain(samples, θs)
     N = length(θs)
     M = length(samples)
-    A = zeros(N0f8, M, N)
+    A = zeros(Float32, M, N)
     for (j, θ) in enumerate(θs)
         for (i, sample) in enumerate(samples)
             ρ = atan2(sample[2], sample[1])
@@ -58,14 +58,14 @@ function cornercam_gain(A::AbstractMatrix, σ, λ)
 end
 
 function reconstruct(cam::CornerCamera, time_range::Tuple, target_rate=framerate(cam.source))
-    seek(cam.source, convert(Float64, time_range[1] / (1u"s")))
+    seek(cam.source.video, convert(Float64, time_range[1] / (1u"s")))
 
-    background_samples = sample(cam, cam.background, cam.params.blur)
+    background_samples = sample(cam, cam.source.background, cam.params.blur)
     pixels = copy(background_samples)
-    frame = read(cam.source)
+    frame = read(cam.source.video)
 
-    frame_skip = max(1, round(Int, framerate(cam.source) / target_rate))
-    closest_achievable_rate = framerate(cam.source) / frame_skip
+    frame_skip = max(1, round(Int, framerate(cam.source.video) / target_rate))
+    closest_achievable_rate = framerate(cam.source.video) / frame_skip
     num_frames = round(Int, (time_range[2] - time_range[1]) * closest_achievable_rate)
     data = zeros(RGB{Float32}, length(cam.params.θs), num_frames)
     for i in 1:num_frames
@@ -77,7 +77,7 @@ function reconstruct(cam::CornerCamera, time_range::Tuple, target_rate=framerate
             end
         end
         for j in 1:frame_skip
-            read!(cam.source, frame)
+            read!(cam.source.video, frame)
         end
     end
     times = time_range[1]:(1/closest_achievable_rate):time_range[2]
@@ -86,5 +86,6 @@ function reconstruct(cam::CornerCamera, time_range::Tuple, target_rate=framerate
               Axis{:time}(times))
 end
 
+include("visualization.jl")
 
 end

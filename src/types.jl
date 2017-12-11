@@ -16,17 +16,30 @@ end
     blur::B = OffGridBlur{6}(3.0f0)
 end
 
-struct CornerCamera{S <: VideoReader, H <: Homography2D, M <: AbstractArray, P <: Params}
-    source::S
-    homography::H
+struct StaticSource{R <: VideoReader, M <: AbstractMatrix{<:Colorant}, H <: Homography2D}
+    video::R
     background::M
+    homography::H
+    λ::Float64
+end
+
+function StaticSource(video::R, 
+                      corners_in_image::AbstractVector, 
+                      im::M, 
+                      λ=sqrt(2.7)) where {R <: VideoReader, M <: AbstractMatrix{<:Colorant}}
+    H = inv(rectify(corners_in_image))
+    StaticSource{R, M, typeof(H)}(video, im, H, λ)
+end
+
+struct CornerCamera{S <: StaticSource, P <: Params}
+    source::S
     params::P
     gain::Matrix{Float64}
 end
 
-function CornerCamera(source::S, homography::H, background::M, params::P, λ) where {S, H, M, P}
+function CornerCamera(source::S, params::P) where {S <: StaticSource, P <: Params}
     A = visibility_gain(params.samples, params.θs)
-    gain = cornercam_gain(A, params.σ, λ)
-    CornerCamera{S, H, M, P}(source, homography, background, params, gain)
+    gain = cornercam_gain(A, params.σ, source.λ)
+    CornerCamera{S, P}(source, params, gain)
 end
 

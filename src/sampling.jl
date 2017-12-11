@@ -10,7 +10,7 @@ end
 function sample!(pixels::AbstractArray{<:Colorant},
                  cam::CornerCamera, im, blur)
     pixels .= sample_blurred.((im,), 
-                              cam.homography.(cam.params.samples),
+                              cam.source.homography.(cam.params.samples),
                               blur)
 end
 

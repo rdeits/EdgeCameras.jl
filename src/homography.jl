@@ -6,11 +6,10 @@ Base.inv(H::Homography2D) = Homography2D(inv(H.H))
     SVector(xprime[1] * scale, xprime[2] * scale)
 end
 
+const DEFAULT_CORNERS = [[0, 0], [0, 1], [1, 1], [1, 0]]
+
 function rectify(original_corners, 
-                 desired_corners = [[0, 0], 
-                                    [0, 1],
-                                    [1, 1],
-                                    [1, 0]])
+                 desired_corners = DEFAULT_CORNERS)
     @assert length(original_corners) == length(desired_corners)
     N = length(original_corners)
     A = zeros(8, 8)
