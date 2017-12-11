@@ -1,42 +1,16 @@
 module Cornercam
 
-using Images
+using ColorTypes
+using FixedPointNumbers: N0f8
 using VideoIO: VideoReader
 using StaticArrays: SVector, SMatrix
 using CoordinateTransformations
 using Interpolations
 using Unitful
 using Parameters: @with_kw
-using IterTools: takenth
 using AxisArrays
 
-struct TransformedVideo{F <: Function, R <: VideoReader, M <: AbstractArray}
-    transform::F
-    video::R
-    buffer::M
-end
-
-function TransformedVideo(f::Function, v::VideoReader)
-    buf = read(v)
-    TransformedVideo(f, v, buf)
-end
-
-Base.seek(v::TransformedVideo, s) = seek(v.video, s)
-
-function Base.read(v::TransformedVideo)
-    read!(v.video, v.buffer)
-    v.transform(v.buffer)
-end
-
-function Base.read!(v::TransformedVideo, out::AbstractArray)
-    read!(v.video, v.buffer)
-    out .= v.transform(v.buffer)
-end
-
 framerate(v::VideoReader) = v.stream_info.stream.avg_frame_rate.num / (v.stream_info.stream.avg_frame_rate.den * u"s")
-framerate(v::TransformedVideo) = framerate(v.video)
-
-const AbstractVideo = Union{VideoReader, TransformedVideo}
 
 struct Homography2D{T, M <: AbstractMatrix{T}} <: Transformation
   H::M
@@ -75,10 +49,16 @@ end
 
 polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
 
-@with_kw struct Params{Tθ, TS}
+struct OffGridBlur{R, T}
+    σ::T
+    OffGridBlur{R}(σ::T) where {R, T} = new{R, T}(σ)
+end
+
+@with_kw struct Params{Tθ, TS, B <: OffGridBlur}
     θs::Tθ = linspace(0, π/2, 200)
     samples::TS = polar_samples(linspace(0, π/2, 200), linspace(0.01, 1, 50))
     σ::Float64 = 0.085
+    blur::B = OffGridBlur{6}(3.0f0)
 end
 
 function visibility_gain(samples, θs)
@@ -110,7 +90,7 @@ function cornercam_gain(A::AbstractMatrix, σ, λ)
     gain = (Σinv \ (Ã' / λ^2));
 end
 
-struct CornerCamera{S <: AbstractVideo, H <: Homography2D, M <: AbstractArray, P <: Params}
+struct CornerCamera{S <: VideoReader, H <: Homography2D, M <: AbstractArray, P <: Params}
     source::S
     homography::H
     background::M
@@ -134,7 +114,7 @@ function show_samples(c::CornerCamera)
     im
 end
 
-function frames_between(video::AbstractVideo, time_range::Tuple)
+function frames_between(video::VideoReader, time_range::Tuple)
     rate = framerate(video)
     seek(video, convert(Float64, time_range[1] / (1u"s")))
     num_frames = round(Int, (time_range[2] - time_range[1]) * rate)
@@ -174,15 +154,10 @@ function imnormal(im)
     (im .- RGB(lb, lb, lb)) ./ (ub - lb)
 end
 
-struct OffGridBlur{R, T}
-    σ::T
-    OffGridBlur{R}(σ::T) where {R, T} = new{R, T}(σ)
-end
-
-function trace(cam::CornerCamera, time_range::Tuple, blur, target_rate=framerate(cam.source))
+function trace(cam::CornerCamera, time_range::Tuple, target_rate=framerate(cam.source))
     seek(cam.source, convert(Float64, time_range[1] / (1u"s")))
 
-    background_samples = sample(cam, cam.background, blur)
+    background_samples = sample(cam, cam.background, cam.params.blur)
     pixels = copy(background_samples)
     frame = read(cam.source)
 
@@ -191,7 +166,7 @@ function trace(cam::CornerCamera, time_range::Tuple, blur, target_rate=framerate
     num_frames = round(Int, (time_range[2] - time_range[1]) * closest_achievable_rate)
     data = zeros(RGB{Float32}, length(cam.params.θs), num_frames)
     for i in 1:num_frames
-        sample!(pixels, cam, frame, blur)
+        sample!(pixels, cam, frame, cam.params.blur)
         pixels .-= background_samples
         for k in 1:length(pixels)
             for j in 1:size(data, 1)
