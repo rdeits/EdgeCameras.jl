@@ -1,6 +1,6 @@
 julia 0.6
 VideoIO 0.2
-Unitful 0.5
+Unitful 0.3
 Images 0.11
 StaticArrays 0.6
 CoordinateTransformations 0.4
