@@ -22,4 +22,4 @@ eachframe(f::Function, video::VideoReader, times::AbstractVector{<:Quantity}) =
     enumerateframes((i, buf) -> f(buf), video, times)
 
 frame_times(time_range::Tuple{Quantity, Quantity}, rate::Quantity) = 
-time_range[1]:(1/rate):time_range[2]
+    time_range[1]:(1/rate):time_range[2]
