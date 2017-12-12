@@ -37,7 +37,7 @@ end
 function reconstruct(cam::EdgeCamera, time_range::Tuple, target_rate=framerate(cam.source))
     seek(cam.source.video, convert(Float64, time_range[1] / (1u"s")))
 
-    background_samples = sample(cam, cam.source.background, cam.params.blur)
+    background_samples = sample(cam, cam.source.stats.mean_image, cam.params.blur)
     pixels = copy(background_samples)
     frame = read(cam.source.video)
 

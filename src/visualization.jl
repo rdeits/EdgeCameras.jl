@@ -18,7 +18,7 @@ function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0)
 end
 
 function Base.show(io::IO, mime::MIME"image/png", source::StaticSource)
-    im = copy(source.background)
+    im = copy(background(source))
     colors = [colorant"black", colorant"red", colorant"green", colorant"blue"]
     for (corner, color) in zip(DEFAULT_CORNERS, colors)
         mark!(im, source.homography(corner), 10, color)
@@ -27,7 +27,7 @@ function Base.show(io::IO, mime::MIME"image/png", source::StaticSource)
 end
 
 function show_samples(c::EdgeCamera)
-    im = desaturate.(c.source.background)
+    im = desaturate.(background(c.source))
     cmap = x -> RGB(1 - x, 0.0, x)
     for (i, s) in enumerate(c.params.samples)
         pixel = c.source.homography(s)

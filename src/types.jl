@@ -29,24 +29,57 @@ radius(blur::OffGridBlur) = blur.radius
 @with_kw struct Params{Tθ, TS, B <: OffGridBlur}
     θs::Tθ = linspace(0, π/2, 200)
     samples::TS = polar_samples(linspace(0, π/2, 200), linspace(0.01, 1, 50))
-    σ::Float64 = 0.085
+    σ::Float64 = 0.00033 # 0.085 in the original paper, scaled down by factor of 255
     blur::B = OffGridBlur(3.0f0, 6)
 end
 
-struct StaticSource{R <: VideoReader, M <: AbstractMatrix{<:Colorant}, H <: Homography2D}
+struct VideoStatistics{T, M <: AbstractArray{<:Colorant}}
+    mean_image::M
+    variance_image::M
+    variance::T
+end
+
+function VideoStatistics(video::VideoReader, 
+                         time_range::Tuple, 
+                         target_rate::Quantity=framerate(video))
+    mean_image = zeros(Float32, 3, video.height, video.width)
+    variance_image = copy(mean_image) # initially accumulats sum of squared values
+    times = frame_times(time_range, target_rate)
+    num_frames = length(times)
+    eachframe(video, times) do buffer
+        mean_image .+= Float32.(channelview(buffer))
+        variance_image .+= Float32.(channelview(buffer)) .^ 2
+    end
+    mean_image ./= num_frames
+    variance_image .= variance_image ./ num_frames .- mean_image .^ 2
+    variance::Float32 = median(mean(variance_image, 1), (2, 3))[1]
+    VideoStatistics(colorview(RGB, mean_image), 
+                    colorview(RGB, variance_image), 
+                    variance)
+end
+
+struct StaticSource{R <: VideoReader, H <: Homography2D, S <: VideoStatistics}
     video::R
-    background::M
     homography::H
-    λ::Float64
+    stats::S
 end
 
 function StaticSource(video::R, 
                       corners_in_image::AbstractVector, 
-                      im::M, 
-                      λ=sqrt(2.7)) where {R <: VideoReader, M <: AbstractMatrix{<:Colorant}}
+                      stats::S) where {R <: VideoReader, S <: VideoStatistics}
     H = inv(rectify(corners_in_image))
-    StaticSource{R, M, typeof(H)}(video, im, H, λ)
+    StaticSource{R, typeof(H), S}(video, H, stats)
 end
+
+function StaticSource(video::VideoReader,
+                      corners_in_image::AbstractVector,
+                      time_range::Tuple,
+                      target_rate::Quantity=framerate(video))
+    stats = VideoStatistics(video, time_range, target_rate)
+    StaticSource(video, corners_in_image, stats)
+end
+
+background(source::StaticSource) = source.stats.mean_image
 
 struct EdgeCamera{S <: StaticSource, P <: Params}
     source::S
@@ -54,9 +87,8 @@ struct EdgeCamera{S <: StaticSource, P <: Params}
     gain::Matrix{Float64}
 end
 
-function EdgeCamera(source::S, params::P) where {S <: StaticSource, P <: Params}
+function EdgeCamera(source::S, params::P=Params()) where {S <: StaticSource, P <: Params}
     A = visibility_gain(params.samples, params.θs)
-    gain = edge_cam_gain(A, params.σ, source.λ)
+    gain = edge_cam_gain(A, params.σ, sqrt(source.stats.variance))
     EdgeCamera{S, P}(source, params, gain)
 end
-
