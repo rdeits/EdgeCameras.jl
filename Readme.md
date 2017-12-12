@@ -14,7 +14,7 @@ In Julia:
 Pkg.clone("https://github.com/rdeits/EdgeCameras.jl")
 ```
 
-# Basic Usage
+# Usage
 
-
-
+* [Basic demo](https://github.com/rdeits/EdgeCameras.jl/blob/gh-pages/notebooks/demo.ipynb)
+* [Stereo reconstruction](https://github.com/rdeits/EdgeCameras.jl/blob/gh-pages/notebooks/red_stereo.ipynb)
