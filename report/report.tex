@@ -1,0 +1,19 @@
+\documentclass{article}
+
+\usepackage{graphicx}
+
+\title{6.865 Pset 10: Edge Cameras in Julia}
+\author{Robin Deits}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Just as a pinhole camera creates an image of a scene by blocking all light rays except those passing through a single point, other obstructions in an environment can create partial images of the scene beyond. In particular, a sharp edge can act as a partial pinhole camera in one dimension, casting a shadow which minutely varies based on the illuminated objects on the other side of that edge \cite{notfound}. In \cite{notfound}, the authors demonstrate a method to turn vertical edges formed by walls and doorways into \emph{edge cameras}, which allow a 1-D reconstruction of an occluded scene. The only input required by the algorithm is a video of the floor near the edge, and the reconstruction can be run over a period of time to build up a time-space image of motion in the occluded scene. 
+
+For my 6.865 final problem set, I have re-implemented the core edge camera algorithm, and used it to demonstrate reconstruction of motion from one camera as well as reconstruction of 2-D motion from a stereo pair of edge cameras. 
+
+\end{document}
