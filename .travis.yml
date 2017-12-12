@@ -28,7 +28,7 @@ branches:
 
 ## uncomment the following lines to override the default test script
 #script:
-#  - julia -e 'Pkg.clone(pwd()); Pkg.build("CornerCameras"); Pkg.test("CornerCameras"; coverage=true)'
+#  - julia -e 'Pkg.clone(pwd()); Pkg.build("EdgeCameras"); Pkg.test("EdgeCameras"; coverage=true)'
 after_success:
   # push coverage results to Codecov
-- julia -e 'cd(Pkg.dir("CornerCameras")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+- julia -e 'cd(Pkg.dir("EdgeCameras")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'

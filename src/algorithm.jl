@@ -27,14 +27,14 @@ function regularizer(m::Integer, σ)
     R = (G′G + c) / σ^2
 end
 
-function cornercam_gain(A::AbstractMatrix, σ, λ)
+function edge_cam_gain(A::AbstractMatrix, σ, λ)
     Ã = hcat(ones(size(A, 1)), A)
     R = regularizer(size(Ã, 2), σ)
     Σinv = Ã' * Ã / λ^2 + R
     gain = (Σinv \ (Ã' / λ^2));
 end
 
-function reconstruct(cam::CornerCamera, time_range::Tuple, target_rate=framerate(cam.source))
+function reconstruct(cam::EdgeCamera, time_range::Tuple, target_rate=framerate(cam.source))
     seek(cam.source.video, convert(Float64, time_range[1] / (1u"s")))
 
     background_samples = sample(cam, cam.source.background, cam.params.blur)

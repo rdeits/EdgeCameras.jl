@@ -26,7 +26,7 @@ function Base.show(io::IO, mime::MIME"image/png", source::StaticSource)
     show(io, mime, im)
 end
 
-function show_samples(c::CornerCamera)
+function show_samples(c::EdgeCamera)
     im = desaturate.(c.source.background)
     cmap = x -> RGB(1 - x, 0.0, x)
     for (i, s) in enumerate(c.params.samples)
@@ -36,6 +36,6 @@ function show_samples(c::CornerCamera)
     im
 end
 
-function Base.show(io::IO, mime::MIME"image/png", cam::CornerCamera)
+function Base.show(io::IO, mime::MIME"image/png", cam::EdgeCamera)
     show(io, mime, show_samples(cam))
 end

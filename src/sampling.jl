@@ -1,14 +1,14 @@
 polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
 
 
-function sample(cam::CornerCamera, im, blur)
+function sample(cam::EdgeCamera, im, blur)
     pixels = Array{eltype(im)}(size(cam.params.samples))
     sample!(pixels, cam, im, blur)
     pixels
 end
 
 function sample!(pixels::AbstractArray{<:Colorant},
-                 cam::CornerCamera, im, blur)
+                 cam::EdgeCamera, im, blur)
     pixels .= sample_blurred.((im,), 
                               cam.source.homography.(cam.params.samples),
                               blur)

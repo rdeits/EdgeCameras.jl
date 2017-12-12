@@ -48,15 +48,15 @@ function StaticSource(video::R,
     StaticSource{R, M, typeof(H)}(video, im, H, λ)
 end
 
-struct CornerCamera{S <: StaticSource, P <: Params}
+struct EdgeCamera{S <: StaticSource, P <: Params}
     source::S
     params::P
     gain::Matrix{Float64}
 end
 
-function CornerCamera(source::S, params::P) where {S <: StaticSource, P <: Params}
+function EdgeCamera(source::S, params::P) where {S <: StaticSource, P <: Params}
     A = visibility_gain(params.samples, params.θs)
-    gain = cornercam_gain(A, params.σ, source.λ)
-    CornerCamera{S, P}(source, params, gain)
+    gain = edge_cam_gain(A, params.σ, source.λ)
+    EdgeCamera{S, P}(source, params, gain)
 end
 

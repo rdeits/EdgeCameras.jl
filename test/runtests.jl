@@ -1,9 +1,11 @@
 using Base.Test
-using CornerCameras
+using EdgeCameras
 using Images
 
-@testset "Corner Cameras" begin
+@testset "Edge Cameras" begin
     @testset "homographies" begin
+        # Test homography for rectification
+        
         original_corners = [[10, 22], 
             [12, 148], 
             [131, 155], 
@@ -24,14 +26,19 @@ using Images
     end
 
     @testset "visibility gain" begin
+        # Test the visibility gain matrix A for a toy example 
+        # (based on Fig. 2 in the paper). 
+
         θs = linspace(0, π/2, 11)
-        samples = CornerCameras.polar_samples(θs, [1.0])
-        A = CornerCameras.visibility_gain(samples, θs)
+        samples = EdgeCameras.polar_samples(θs, [1.0])
+        A = EdgeCameras.visibility_gain(samples, θs)
         @test size(A, 1) == size(A, 2)
         @test A == LowerTriangular(ones(size(A, 1), size(A, 1)))
     end
 
     @testset "gradient matrix and regularizer" begin
+        # Test that the efficient tri-diagonal computation of
+        # the regularization term is correct.
         function G_reference(m)
             G = I - diagm(ones(m - 1), 1)
             G = G[1:end-1, :]
@@ -48,22 +55,24 @@ using Images
 
         σ = 0.1
         for m in 5:10
-            G′G = CornerCameras.G_times_G(m)
+            G′G = EdgeCameras.G_times_G(m)
             G_expected = G_reference(m)
             @test G′G == G_expected' * G_expected
 
-            R = CornerCameras.regularizer(m, σ)
+            R = EdgeCameras.regularizer(m, σ)
             @test R == R_reference(m, σ)
         end
     end
 
     @testset "interpolated exponential" begin
+        # Test that our linear interpolation for computing off-grid
+        # gaussian weights is a close fit to the true values
         σ = 3.0
         radius = 6
-        blur = CornerCameras.OffGridBlur(σ, radius)
+        blur = EdgeCameras.OffGridBlur(σ, radius)
         for offset in linspace(-0.5, 0.5, 11)
-            @test isapprox(CornerCameras.weights(blur, offset),
-                           CornerCameras.weights(σ, radius, offset),
+            @test isapprox(EdgeCameras.weights(blur, offset),
+                           EdgeCameras.weights(σ, radius, offset),
                            rtol=1e-3,
                            atol=1e-2)
         end
@@ -85,8 +94,8 @@ using Images
 
         # Now generate what should be an identical image by 
         # generating a lazy blurred sample at *every* coordinate:
-        blur = CornerCameras.OffGridBlur(σ, radius)
-        sampled = CornerCameras.sample_blurred.(
+        blur = EdgeCameras.OffGridBlur(σ, radius)
+        sampled = EdgeCameras.sample_blurred.(
             (im,),
             collect(CartesianRange((100, 100))),
             (blur,))

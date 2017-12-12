@@ -7,5 +7,5 @@ function frames_between(video::VideoReader, time_range::Tuple)
     return (read(video) for i in 1:num_frames)
 end
 
-background(video::VideoReader, time_range::Tuple) = 
-    mean((RGB{Float32}.(im) for im in frames_between(video, time_range)))
+background(video::VideoReader, time_range::Tuple, skip::Integer=1) = 
+    mean((RGB{Float32}.(im) for im in takenth(frames_between(video, time_range), skip)))

@@ -1,4 +1,4 @@
-module CornerCameras
+module EdgeCameras
 
 export show_samples,
        rectify,
@@ -15,6 +15,7 @@ using Unitful
 using Parameters: @with_kw
 using AxisArrays
 using Interpolations: interpolate, BSpline, Linear, OnGrid, AbstractInterpolation
+using IterTools: takenth
 
 include("types.jl")
 include("homography.jl")
