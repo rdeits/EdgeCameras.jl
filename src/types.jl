@@ -44,12 +44,11 @@ function VideoStatistics(video::VideoReader,
                          target_rate::Quantity=framerate(video))
     mean_image = zeros(Float32, 3, video.height, video.width)
     variance_image = copy(mean_image) # initially accumulats sum of squared values
-    times = frame_times(time_range, target_rate)
-    num_frames = length(times)
-    eachframe(video, times) do buffer
+    times = eachframe(video, time_range, target_rate) do buffer
         mean_image .+= Float32.(channelview(buffer))
         variance_image .+= Float32.(channelview(buffer)) .^ 2
     end
+    num_frames = length(times)
     mean_image ./= num_frames
     variance_image .= variance_image ./ num_frames .- mean_image .^ 2
     variance::Float32 = median(mean(variance_image, 1), (2, 3))[1]
