@@ -4,31 +4,35 @@ using Images
 
 @testset "Edge Cameras" begin
     @testset "homographies" begin
-        # Test homography for rectification
-        
+        # Test homographies for image rectification.
+        # Choose four corners in our warped image.
         original_corners = [[10, 22], 
             [12, 148], 
             [131, 155], 
             [123, 5]]
 
+        # For simplicity, we will transform the image 
+        # corners into a unit box
         desired_corners = [[0, 0], 
             [0, 1],
             [1, 1],
             [1, 0]]
 
+        # Compute a homography from desired to original:
         H1 = rectify(desired_corners, original_corners)
+        # Verify that applying the homography gives the original coordinates
         @test all((H1.(desired_corners) .≈ original_corners))
 
+        # Verify that the homography from original to desired
+        # is just the inverse:
         H2 = rectify(original_corners, desired_corners)
         @test all(norm.(H2.(original_corners) .- desired_corners) .< 1e-15)
-
         @test H1.H ≈ inv(H2).H ./ (inv(H2).H[3, 3])
     end
 
     @testset "visibility gain" begin
         # Test the visibility gain matrix A for a toy example 
         # (based on Fig. 2 in the paper). 
-
         θs = linspace(0, π/2, 11)
         samples = EdgeCameras.polar_samples(θs, [1.0])
         A = EdgeCameras.visibility_gain(samples, θs)
@@ -82,9 +86,8 @@ using Images
         # Test that the lazy blurred samples produce the same 
         # result as blurring the image and then sampling (at least
         # when on-grid). 
-
         srand(1)
-
+        
         # Generate a random image and blur it
         im = rand(RGB{Float32}, 100, 100)
         σ = 3.0
