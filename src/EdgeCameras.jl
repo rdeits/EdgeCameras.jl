@@ -7,7 +7,8 @@ export show_samples,
        reconstruct
 
 using Colors
-import Images
+using Images: colorview, channelview, N0f8
+using VideoIO
 using VideoIO: VideoReader
 using StaticArrays: SVector, SMatrix
 using CoordinateTransformations

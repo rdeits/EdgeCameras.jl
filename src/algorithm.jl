@@ -35,30 +35,64 @@ function edge_cam_gain(A::AbstractMatrix, σ, λ)
 end
 
 function reconstruct(cam::EdgeCamera, time_range::Tuple, target_rate=framerate(cam.source))
-    seek(cam.source.video, convert(Float64, time_range[1] / (1u"s")))
-
-    background_samples = sample(cam, cam.source.background, cam.params.blur)
+    background_samples = sample(cam, background(cam.source), cam.params.blur)
     pixels = copy(background_samples)
-    frame = read(cam.source.video)
-
-    frame_skip = max(1, round(Int, framerate(cam.source.video) / target_rate))
-    closest_achievable_rate = framerate(cam.source.video) / frame_skip
-    num_frames = round(Int, (time_range[2] - time_range[1]) * closest_achievable_rate)
+    times = frame_times(time_range, target_rate)
+    num_frames = length(times)
     data = zeros(RGB{Float32}, length(cam.params.θs), num_frames)
-    for i in 1:num_frames
-        sample!(pixels, cam, frame, cam.params.blur)
+    # enumerateframes(cam.source.video, times) do i, buffer
+    #     sample!(pixels, cam, buffer, cam.params.blur)
+    #     pixels .-= background_samples
+    #     for k in 1:length(pixels)
+    #         for j in 1:size(data, 1)
+    #             data[j, i] += cam.gain[j + 1, k] * pixels[k]
+    #         end
+    #     end
+    # end
+    # buffer = zeros(RGB{N0f8}, cam.source.video.height, cam.source.video.width)
+    buffer::FRAME_TYPE = read(cam.source.video)
+    for (i, current_time) in enumerate(times)
+        seek(cam.source.video, convert(Float64, current_time / (1u"s")))
+        read!(cam.source.video, buffer)
+        sample!(pixels, cam, buffer, cam.params.blur)
         pixels .-= background_samples
         for k in 1:length(pixels)
             for j in 1:size(data, 1)
                 data[j, i] += cam.gain[j + 1, k] * pixels[k]
             end
         end
-        for j in 1:frame_skip
-            read!(cam.source.video, frame)
-        end
     end
-    times = time_range[1]:(1/closest_achievable_rate):time_range[2]
-    AxisArray(data, 
+    AxisArray(data,
               Axis{:θ}(cam.params.θs), 
               Axis{:time}(times))
 end
+
+
+# function reconstruct(cam::EdgeCamera, time_range::Tuple, target_rate=framerate(cam.source))
+#     seek(cam.source.video, convert(Float64, time_range[1] / (1u"s")))
+
+#     background_samples = sample(cam, cam.source.background, cam.params.blur)
+#     pixels = copy(background_samples)
+#     frame = read(cam.source.video)
+
+#     frame_skip = max(1, round(Int, framerate(cam.source.video) / target_rate))
+#     closest_achievable_rate = framerate(cam.source.video) / frame_skip
+#     num_frames = round(Int, (time_range[2] - time_range[1]) * closest_achievable_rate)
+#     data = zeros(RGB{Float32}, length(cam.params.θs), num_frames)
+#     for i in 1:num_frames
+#         sample!(pixels, cam, frame, cam.params.blur)
+#         pixels .-= background_samples
+#         for k in 1:length(pixels)
+#             for j in 1:size(data, 1)
+#                 data[j, i] += cam.gain[j + 1, k] * pixels[k]
+#             end
+#         end
+#         for j in 1:frame_skip
+#             read!(cam.source.video, frame)
+#         end
+#     end
+#     times = time_range[1]:(1/closest_achievable_rate):time_range[2]
+#     AxisArray(data, 
+#               Axis{:θ}(cam.params.θs), 
+#               Axis{:time}(times))
+# end
