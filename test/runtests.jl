@@ -19,13 +19,13 @@ using Images
             [1, 0]]
 
         # Compute a homography from desired to original:
-        H1 = rectify(desired_corners, original_corners)
+        H1 = EdgeCameras.rectify(desired_corners, original_corners)
         # Verify that applying the homography gives the original coordinates
         @test all((H1.(desired_corners) .≈ original_corners))
 
         # Verify that the homography from original to desired
         # is just the inverse:
-        H2 = rectify(original_corners, desired_corners)
+        H2 = EdgeCameras.rectify(original_corners, desired_corners)
         @test all(norm.(H2.(original_corners) .- desired_corners) .< 1e-15)
         @test H1.H ≈ inv(H2).H ./ (inv(H2).H[3, 3])
     end

@@ -1,3 +1,9 @@
+struct Homography2D{T, M <: AbstractMatrix{T}} <: Transformation
+  H::M
+end
+
+Homography2D(H::M) where {T, M <: AbstractMatrix{T}} = Homography2D{T, M}(H)
+
 Base.inv(H::Homography2D) = Homography2D(inv(H.H))
 
 @inline function (trans::Homography2D)(x)

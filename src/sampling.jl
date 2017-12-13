@@ -1,17 +1,23 @@
-polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
+struct OffGridBlur{T, I <: AbstractInterpolation}
+    σ::T
+    radius::Int
+    weights::I 
 
-
-function sample(cam::EdgeCamera, im, blur)
-    pixels = Array{eltype(im)}(size(cam.params.samples))
-    sample!(pixels, cam, im, blur)
-    pixels
+    function OffGridBlur(σ::T, radius::Integer, samples=3) where {T}
+        all_weights = [
+            weights(σ, radius, convert(T, grid_offset)) for grid_offset in linspace(-0.5, 0.5, samples)
+        ]
+        itp = interpolate(all_weights, BSpline(Linear()), OnGrid())
+        new{T, typeof(itp)}(σ, radius, itp)
+    end
 end
 
-function sample!(pixels::AbstractArray{<:Colorant},
-                 cam::EdgeCamera, im, blur)
-    pixels .= sample_blurred.((im,), 
-                              cam.source.homography.(cam.params.samples),
-                              blur)
+weights(blur::OffGridBlur, grid_offset) = blur.weights[2 * grid_offset + 2]
+radius(blur::OffGridBlur) = blur.radius
+
+function weights(σ, radius, grid_offset)
+    scale = -1/(2 * σ^2)
+    SVector{2 * radius + 1}([exp(scale * (dy + grid_offset)^2) for dy in -radius:radius]) 
 end
 
 function sample_blurred(im::AbstractMatrix, 
@@ -19,8 +25,9 @@ function sample_blurred(im::AbstractMatrix,
                         blur::OffGridBlur{T}) where T
     y0, x0 = pt
     C = promote_type(eltype(im), RGB{T})
-    ỹ = round(Int, y0)
     R = radius(blur)
+
+    ỹ = round(Int, y0)
     dy_range = max(-R, first(indices(im, 1)) - ỹ):min(R, last(indices(im, 1)) - ỹ)
     y_weights = weights(blur, ỹ - y0)
     weight_y::T = zero(T)
@@ -38,12 +45,10 @@ function sample_blurred(im::AbstractMatrix,
 
     total_x::C = zero(C)
     for dx in dx_range
-        x = x̃ + dx
         total_y::C = zero(C)
         @inbounds for dy in dy_range
-            y = ỹ + dy
             w_y = y_weights[dy + R + 1]
-            total_y += w_y * im[y, x]
+            total_y += w_y * im[ỹ + dy, x̃ + dx]
         end
         w_x = x_weights[dx + R + 1]
         total_x += (w_x / weight_y) * total_y

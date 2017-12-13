@@ -1,3 +1,44 @@
+struct Params{Tθ, TS, Tσ, B <: OffGridBlur}
+    θs::Tθ
+    samples::TS
+    σ::Tσ
+    blur::B
+end
+
+Params(;
+       θs = linspace(0, π/2, 200),
+       samples = polar_samples(linspace(0, π/2, 200), linspace(0.01, 1, 50)),
+       σ = 0.00033f0, # 0.085 in the original paper, scaled down by factor of 255,
+       blur = OffGridBlur(3.0f0, 6)) = 
+    Params(θs, samples, σ, blur)
+
+polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
+
+struct EdgeCamera{S <: StaticSource, P <: Params}
+    source::S
+    params::P
+    gain::Matrix{Float64}
+end
+
+function EdgeCamera(source::S, params::P=Params()) where {S <: StaticSource, P <: Params}
+    A = visibility_gain(params.samples, params.θs)
+    gain = edge_cam_gain(A, params.σ, sqrt(source.stats.variance))
+    EdgeCamera{S, P}(source, params, gain)
+end
+
+function sample(cam::EdgeCamera, im, blur)
+    pixels = Array{eltype(im)}(size(cam.params.samples))
+    sample!(pixels, cam, im, blur)
+    pixels
+end
+
+function sample!(pixels::AbstractArray{<:Colorant},
+                 cam::EdgeCamera, im, blur)
+    pixels .= sample_blurred.((im,), 
+                              cam.source.homography.(cam.params.samples),
+                              blur)
+end
+
 function visibility_gain(samples, θs)
     N = length(θs)
     M = length(samples)
