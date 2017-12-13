@@ -138,6 +138,8 @@ Each video frame produces a new set of samples $\textbf{y}$ from which a new est
 
 I ran the edge camera algorithm on three scenes: the indoor scene with two subjects walking (from \cite{bouman_turningcornerscameras2017} and shown in Fig. \ref{fig:2_people_samples}), the indoor stereo scene with two edge cameras and one subject (from \cite{bouman_turningcornerscameras2017} and shown in Fig. \ref{fig:stereo}), and an indoor scene that I recorded myself (shown in Fig. \ref{fig:background}, \ref{fig:samples}, \ref{fig:trace}). Each scene shows a recognizable pattern in the space-time image which corresponds to the motion of the hidden subject. 
 
+The dataset that I recorded was captured with a Fuji X-T1 mirrorless digital camera using a 23mm fixed-zoom lens, ISO 800, 60 frames per second, and 1280x720 pixel resolution. Only the natural lighting in the room was used to illuminate the scene. 
+
 With two corner cameras, as in Fig. \ref{fig:stereo}, it is possible to estimate the full 2D position of the hidden subject. Following the derivation in \cite{bouman_turningcornerscameras2017}, I manually traced the apparent path of the subject in Figs. \ref{fig:stereo-trace-left} and \ref{fig:stereo-trace-right} and triangulated the position of the subject from the two angular measurements. The estimated position of the subject is shown in Fig. \ref{fig:2d-path} and is, at least qualitatively, a good fit to the original stereo reconstruction in Fig. 9 of \cite{bouman_turningcornerscameras2017}. 
 
 \begin{figure}[htbp]
@@ -189,7 +191,11 @@ With Gaussian weights computed on-line, extracting a single pixel blurred with a
 
 \subsection{Estimating Image Noise}
 
-One aspect of the edge camera algorithm that I have not yet implemented is estimation of the image noise parameter $\lambda$. The authors of \cite{bouman_turningcornerscameras2017} recommend using the median of the variance of the per-pixel noise, but I found that a default value of 1.6 worked well enough in practice. 
+As in the original implementation of the edge camera algorithm from the authors of \cite{bouman_turningcornerscameras2017}, I estimate the noise parameter $\lambda$ by taking the median of the per-pixel variance. In code, this is done at the same time as the background estimation by keeping a running sum of both the pixel values and the squared pixel values, since we have:
+\begin{align}
+\text{Var}(X) &= \text{E}[X^2] - \text{E}[X]^2
+\end{align}
+The additional parameters $\sigma_1$ and $\sigma_2$ are both fixed to $0.00033$, which is equivalent to the parameter values used in \cite{bouman_turningcornerscameras2017} but scaled down by a factor of 255 due to the fact that images in Julia are always represented between 0 and 1.
 
 \section{Conclusion}
 
