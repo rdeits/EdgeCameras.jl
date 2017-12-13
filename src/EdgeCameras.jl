@@ -2,7 +2,9 @@ module EdgeCameras
 
 export StaticSource,
        reconstruct,
-       EdgeCamera
+       EdgeCamera,
+       Params,
+       VideoStatistics
 
 import Colors: N0f8, RGB, Colorant, @colorant_str, gray, Gray
 import Images: colorview, channelview

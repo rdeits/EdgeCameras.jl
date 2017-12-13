@@ -17,6 +17,8 @@ function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0)
     end
 end
 
+Base.show(io::IO, mime::MIME"image/png", stats::VideoStatistics) = show(io, mime, stats.mean_image)
+
 function Base.show(io::IO, mime::MIME"image/png", source::StaticSource)
     im = copy(background(source))
     colors = [colorant"black", colorant"red", colorant"green", colorant"blue"]

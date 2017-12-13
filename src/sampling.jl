@@ -20,6 +20,10 @@ function weights(σ, radius, grid_offset)
     SVector{2 * radius + 1}([exp(scale * (dy + grid_offset)^2) for dy in -radius:radius]) 
 end
 
+"""
+Sample from image `im` at non-integer point `pt`, using
+a Gaussian blur described by `blur` to avoid aliasing.
+"""
 function sample_blurred(im::AbstractMatrix, 
                         pt::Union{Tuple, SVector}, 
                         blur::OffGridBlur{T}) where T
