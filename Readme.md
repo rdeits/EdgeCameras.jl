@@ -1,6 +1,6 @@
 # EdgeCameras.jl: Edge Cameras in Julia
 
-This project consists of an implementation of *edge cameras* based on the work of Bouman et al. [1]. An edge camera is formed when a sharp edge (such as the corner of a wall) creates a natural one-dimensonal pinhole camera, revealing the motions of objects which are completely obscured by the corner. More information from the original authors can be found at [people.csail.mit.edu](https://people.csail.mit.edu/klbouman/cornercameras.html). 
+This project consists of an implementation of *edge cameras* based on the work of Bouman et al. [1]. An edge camera is formed when a sharp edge (such as the corner of a wall) creates a natural one-dimensonal pinhole camera, revealing the motions of objects which are completely obscured by the corner. More information from the original authors can be found at [people.csail.mit.edu](https://people.csail.mit.edu/klbouman/cornercameras.html).
 
 This package consists of an entirely new implementation of the edge camera algorithm, based on the work presented in the paper, and done entirely in [Julia](https://julialang.org/) (except for the raw video I/O, which is ultimately handled by `ffmpeg`).
 
@@ -11,10 +11,11 @@ This package consists of an entirely new implementation of the edge camera algor
 In Julia:
 
 ```julia
-Pkg.clone("https://github.com/rdeits/EdgeCameras.jl")
+using Pkg
+pkg"add https://github.com/rdeits/EdgeCameras.jl"
 ```
 
 # Usage
 
-* [Basic demo](https://github.com/rdeits/EdgeCameras.jl/blob/gh-pages/notebooks/demo.ipynb)
-* [Stereo reconstruction](https://github.com/rdeits/EdgeCameras.jl/blob/gh-pages/notebooks/red_stereo.ipynb)
+* [Basic demo](notebooks/demo.ipynb)
+* [Stereo reconstruction](notebooks/red_stereo.ipynb)

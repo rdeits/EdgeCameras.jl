@@ -6,10 +6,10 @@ struct Params{Tθ, TS, Tσ, B <: OffGridBlur}
 end
 
 Params(;
-       θs = linspace(0, π/2, 200),
-       samples = polar_samples(linspace(0, π/2, 200), linspace(0.01, 1, 50)),
+       θs = range(0, stop=π/2, length=200),
+       samples = polar_samples(range(0, stop=π/2, length=200), range(0.01, stop=1, length=50)),
        σ = 0.00033f0, # 0.085 in the original paper, scaled down by factor of 255,
-       blur = OffGridBlur(3.0f0, 6)) = 
+       blur = OffGridBlur(3.0f0, 6)) =
     Params(θs, samples, σ, blur)
 
 polar_samples(θs, rs) = [CartesianFromPolar()(Polar(x[2], x[1])) for x in Iterators.product(θs, rs)]
@@ -34,7 +34,7 @@ end
 
 function sample!(pixels::AbstractArray{<:Colorant},
                  cam::EdgeCamera, im, blur)
-    pixels .= sample_blurred.((im,), 
+    pixels .= sample_blurred.((im,),
                               cam.source.homography.(cam.params.samples),
                               blur)
 end
@@ -45,7 +45,7 @@ function visibility_gain(samples, θs)
     A = zeros(Float32, M, N)
     for (j, θ) in enumerate(θs)
         for (i, sample) in enumerate(samples)
-            ρ = atan2(sample[2], sample[1])
+            ρ = atan(sample[2], sample[1])
             A[i, j] = ρ >= θ
         end
     end
@@ -53,7 +53,7 @@ function visibility_gain(samples, θs)
 end
 
 # Rather than computing G and then G' * G separately, we
-# can just directly compute G'G as a Tridiagonal matrix. 
+# can just directly compute G'G as a Tridiagonal matrix.
 # See the tests for verification of this approach.
 function G_times_G(m::Integer)
     off_diag = vcat(0.0, fill(-1.0, m - 2))
@@ -89,7 +89,7 @@ function reconstruct(cam::EdgeCamera, time_range::Tuple, target_rate=framerate(c
             end
         end
     end
-    AxisArray(data, 
-              Axis{:θ}(cam.params.θs), 
+    AxisArray(data,
+              Axis{:θ}(cam.params.θs),
               Axis{:time}(times))
 end

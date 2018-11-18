@@ -1,38 +1,38 @@
 struct OffGridBlur{T, I <: AbstractInterpolation}
     σ::T
     radius::Int
-    weights::I 
+    weights::I
 
     function OffGridBlur(σ::T, radius::Integer, samples=3) where {T}
         all_weights = [
-            weights(σ, radius, convert(T, grid_offset)) for grid_offset in linspace(-0.5, 0.5, samples)
+            weights(σ, radius, convert(T, grid_offset)) for grid_offset in range(-0.5, stop=0.5, length=samples)
         ]
-        itp = interpolate(all_weights, BSpline(Linear()), OnGrid())
+        itp = interpolate(all_weights, BSpline(Linear()))
         new{T, typeof(itp)}(σ, radius, itp)
     end
 end
 
-weights(blur::OffGridBlur, grid_offset) = blur.weights[2 * grid_offset + 2]
+weights(blur::OffGridBlur, grid_offset) = blur.weights(2 * grid_offset + 2)
 radius(blur::OffGridBlur) = blur.radius
 
 function weights(σ, radius, grid_offset)
     scale = -1/(2 * σ^2)
-    SVector{2 * radius + 1}([exp(scale * (dy + grid_offset)^2) for dy in -radius:radius]) 
+    SVector{2 * radius + 1}([exp(scale * (dy + grid_offset)^2) for dy in -radius:radius])
 end
 
 """
 Sample from image `im` at non-integer point `pt`, using
 a Gaussian blur described by `blur` to avoid aliasing.
 """
-function sample_blurred(im::AbstractMatrix, 
-                        pt::Union{Tuple, SVector}, 
+function sample_blurred(im::AbstractMatrix,
+                        pt::Union{Tuple, SVector},
                         blur::OffGridBlur{T}) where T
     y0, x0 = pt
     C = promote_type(eltype(im), RGB{T})
     R = radius(blur)
 
     ỹ = round(Int, y0)
-    dy_range = max(-R, first(indices(im, 1)) - ỹ):min(R, last(indices(im, 1)) - ỹ)
+    dy_range = max(-R, first(axes(im, 1)) - ỹ):min(R, last(axes(im, 1)) - ỹ)
     y_weights = weights(blur, ỹ - y0)
     weight_y::T = zero(T)
     for dy in dy_range
@@ -40,7 +40,7 @@ function sample_blurred(im::AbstractMatrix,
     end
 
     x̃ = round(Int, x0)
-    dx_range = max(-R, first(indices(im, 2)) - x̃):min(R, last(indices(im, 2)) - x̃)
+    dx_range = max(-R, first(axes(im, 2)) - x̃):min(R, last(axes(im, 2)) - x̃)
     x_weights = weights(blur, x̃ - x0)
     weight_x::T = zero(T)
     for dx in dx_range
