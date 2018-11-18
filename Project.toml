@@ -1,6 +1,6 @@
 name = "EdgeCameras"
 uuid = "2c982244-eb47-11e8-1c11-070084c1fd7d"
-authors = ["Robin Deits <robin.deits@gmail.com>"]
+authors = ["Robin Deits <mail@robindeits.com>"]
 version = "0.1.0"
 
 [deps]
