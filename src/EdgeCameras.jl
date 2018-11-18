@@ -6,15 +6,15 @@ export StaticSource,
        Params,
        VideoStatistics
 
-import Colors: N0f8, RGB, Colorant, @colorant_str, gray, Gray
-import Images: colorview, channelview
-import VideoIO
-import VideoIO: VideoReader
-import StaticArrays: SVector, SMatrix
-import CoordinateTransformations: Transformation, CartesianFromPolar, Polar
-import Unitful: Quantity, @u_str
-import AxisArrays: AxisArray, Axis
-import Interpolations: interpolate, BSpline, Linear, OnGrid, AbstractInterpolation
+using Colors: N0f8, RGB, Colorant, @colorant_str, gray, Gray
+using Images: colorview, channelview
+using VideoIO: VideoIO, VideoReader
+using StaticArrays: SVector, SMatrix
+using CoordinateTransformations: Transformation, CartesianFromPolar, Polar
+using Unitful: Quantity, @u_str
+using AxisArrays: AxisArray, Axis
+using Interpolations: interpolate, BSpline, Linear, OnGrid, AbstractInterpolation
+using LinearAlgebra
 
 include("homography.jl")
 include("stats.jl")

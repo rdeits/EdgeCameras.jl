@@ -1,19 +1,21 @@
-using Base.Test
+using Test
 using EdgeCameras
 using Images
+using LinearAlgebra
+using Random
 
 @testset "Edge Cameras" begin
     @testset "homographies" begin
         # Test homographies for image rectification.
         # Choose four corners in our warped image.
-        original_corners = [[10, 22], 
-            [12, 148], 
-            [131, 155], 
+        original_corners = [[10, 22],
+            [12, 148],
+            [131, 155],
             [123, 5]]
 
-        # For simplicity, we will transform the image 
+        # For simplicity, we will transform the image
         # corners into a unit box
-        desired_corners = [[0, 0], 
+        desired_corners = [[0, 0],
             [0, 1],
             [1, 1],
             [1, 0]]
@@ -31,9 +33,9 @@ using Images
     end
 
     @testset "visibility gain" begin
-        # Test the visibility gain matrix A for a toy example 
-        # (based on Fig. 2 in the paper). 
-        θs = linspace(0, π/2, 11)
+        # Test the visibility gain matrix A for a toy example
+        # (based on Fig. 2 in the paper).
+        θs = range(0, stop=π/2, length=11)
         samples = EdgeCameras.polar_samples(θs, [1.0])
         A = EdgeCameras.visibility_gain(samples, θs)
         @test size(A, 1) == size(A, 2)
@@ -44,16 +46,16 @@ using Images
         # Test that the efficient tri-diagonal computation of
         # the regularization term is correct.
         function G_reference(m)
-            G = I - diagm(ones(m - 1), 1)
+            G = I - diagm(1 => ones(m - 1))
             G = G[1:end-1, :]
-            G[1, :] = 0
+            G[1, :] .= 0
             G
         end
 
         function R_reference(m, σ)
             G = G_reference(m)
-            c = eye(m)
-            c[1, :] = 0
+            c = Matrix(I, m, m)
+            c[1, :] .= 0
             R = Tridiagonal((G' * G + c)) / σ^2
         end
 
@@ -74,7 +76,7 @@ using Images
         σ = 3.0
         radius = 6
         blur = EdgeCameras.OffGridBlur(σ, radius)
-        for offset in linspace(-0.5, 0.5, 11)
+        for offset in range(-0.5, stop=0.5, length=11)
             @test isapprox(EdgeCameras.weights(blur, offset),
                            EdgeCameras.weights(σ, radius, offset),
                            rtol=1e-3,
@@ -83,24 +85,24 @@ using Images
     end
 
     @testset "blurred_sample" begin
-        # Test that the lazy blurred samples produce the same 
+        # Test that the lazy blurred samples produce the same
         # result as blurring the image and then sampling (at least
-        # when on-grid). 
-        srand(1)
-        
+        # when on-grid).
+        Random.seed!(1)
+
         # Generate a random image and blur it
         im = rand(RGB{Float32}, 100, 100)
         σ = 3.0
         kernel = Kernel.gaussian(σ)
-        radius = (length(indices(kernel, 1)) - 1) ÷ 2
+        radius = (length(axes(kernel, 1)) - 1) ÷ 2
         filtered = imfilter(im, kernel)
 
-        # Now generate what should be an identical image by 
+        # Now generate what should be an identical image by
         # generating a lazy blurred sample at *every* coordinate:
         blur = EdgeCameras.OffGridBlur(σ, radius)
         sampled = EdgeCameras.sample_blurred.(
             (im,),
-            collect(CartesianRange((100, 100))),
+            collect(CartesianIndices((100, 100))),
             (blur,))
 
         # Verify that the images are the same (away from the boundary)

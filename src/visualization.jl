@@ -6,10 +6,10 @@ end
 function mark!(im::AbstractArray, center, radius::Integer=3, color=RGB(1., 0, 0))
     for dx in -radius:radius
         x = round(Int, center[2] + dx)
-        if x ∈ indices(im, 2)
+        if x ∈ axes(im, 2)
             for dy in -radius:radius
                 y = round(Int, center[1] + dy)
-                if y ∈ indices(im, 1)
+                if y ∈ axes(im, 1)
                     im[y, x] = color
                 end
             end
