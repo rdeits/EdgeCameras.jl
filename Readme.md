@@ -8,11 +8,14 @@ This package consists of an entirely new implementation of the edge camera algor
 
 # Installation
 
-In Julia:
+You'll need to install Julia 1.0 or newer from <https://julialang.org/downloads/>
+
+To install this package in Julia, you can do the following:
 
 ```julia
-using Pkg
-pkg"add https://github.com/rdeits/EdgeCameras.jl"
+julia> using Pkg
+
+julia> Pkg.add("https://github.com/rdeits/EdgeCameras.jl")
 ```
 
 # Usage
