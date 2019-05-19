@@ -27,16 +27,16 @@ function EdgeCamera(source::S, params::P=Params()) where {S <: StaticSource, P <
 end
 
 function sample(cam::EdgeCamera, im, blur)
-    pixels = Array{eltype(im)}(size(cam.params.samples))
+    pixels = Array{eltype(im)}(undef, size(cam.params.samples))
     sample!(pixels, cam, im, blur)
     pixels
 end
 
 function sample!(pixels::AbstractArray{<:Colorant},
                  cam::EdgeCamera, im, blur)
-    pixels .= sample_blurred.((im,),
+    pixels .= sample_blurred.(Ref(im),
                               cam.source.homography.(cam.params.samples),
-                              blur)
+                              Ref(blur))
 end
 
 function visibility_gain(samples, θs)

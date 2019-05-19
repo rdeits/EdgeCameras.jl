@@ -17,6 +17,7 @@ using Unitful: Quantity, @u_str
 using AxisArrays: AxisArray, Axis
 using Interpolations: interpolate, BSpline, Linear, OnGrid, AbstractInterpolation
 using LinearAlgebra
+using Statistics
 
 include("homography.jl")
 include("stats.jl")

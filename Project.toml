@@ -11,6 +11,7 @@ Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 VideoIO = "d6d074c3-1acf-5d4c-9a43-ef38773959a2"
 
@@ -18,17 +19,17 @@ VideoIO = "d6d074c3-1acf-5d4c-9a43-ef38773959a2"
 AxisArrays = "0.3"
 Colors = "0.9"
 CoordinateTransformations = "0.5"
-Images = "0.16"
+Images = "0.16, 0.17, 0.18"
 Interpolations = "0.9, 0.10"
-Julia = "0.7, 1.0"
+Julia = "1.0"
 StaticArrays = "0.8, 0.9, 0.10, 0.11"
 Unitful = "0.12"
-VideoIO = "0.4"
+VideoIO = "0.6"
 
 [extras]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "LinearAlgebra", "Random"]
+test = ["LinearAlgebra", "Test", "Random"]
