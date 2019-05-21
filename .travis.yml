@@ -8,6 +8,9 @@ julia:
   - nightly
 env:
   - DATADEPS_ALWAYS_ACCEPT=true
+cache:
+  directories:
+    - $HOME/.julia/datadeps
 addons:
   apt:
     packages:
