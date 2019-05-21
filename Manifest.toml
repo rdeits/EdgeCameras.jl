@@ -136,9 +136,9 @@ uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 version = "1.0.6"
 
 [[FixedPointNumbers]]
-git-tree-sha1 = "5eac756947a90dad3899dad1d6c7eb90e8b58678"
+git-tree-sha1 = "d14a6fa5890ea3a7e5dcab6811114f132fec2b4b"
 uuid = "53c48c17-4a7d-5ca2-90c5-79b7896eea93"
-version = "0.6.0"
+version = "0.6.1"
 
 [[Glob]]
 deps = ["Compat", "Test"]
