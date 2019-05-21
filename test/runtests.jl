@@ -109,3 +109,5 @@ using Random
         @test maximum(abs.(sampled[10:90, 10:90] .- filtered[10:90, 10:90])) < 1e-6
     end
 end
+
+include("notebooks.jl")
