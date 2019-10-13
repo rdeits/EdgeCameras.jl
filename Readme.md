@@ -18,7 +18,7 @@ To install this package in Julia, you can do the following:
 ```julia
 julia> using Pkg
 
-julia> Pkg.add("https://github.com/rdeits/EdgeCameras.jl")
+julia> Pkg.add("EdgeCameras")
 ```
 
 # Usage
