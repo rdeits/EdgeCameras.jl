@@ -22,6 +22,7 @@ before_script:
   - pushd ~/.julia/datadeps
   - curl "https://people.csail.mit.edu/klbouman/pw/projects/cornercam/example_videos.zip"
   - unzip example_videos.zip
+  - popd
 after_success:
   # push coverage results to Codecov
 - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
