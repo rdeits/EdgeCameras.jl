@@ -20,7 +20,7 @@ branches:
 before_script:
   - mkdir -p ~/.julia/datadeps
   - pushd ~/.julia/datadeps
-  - curl "https://people.csail.mit.edu/klbouman/pw/projects/cornercam/example_videos.zip"
+  - wget "https://people.csail.mit.edu/klbouman/pw/projects/cornercam/example_videos.zip"
   - unzip example_videos.zip
   - popd
 after_success:
