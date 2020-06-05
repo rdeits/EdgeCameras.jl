@@ -1,6 +1,6 @@
 # EdgeCameras.jl: Edge Cameras in Julia
 
-[![Build Status](https://travis-ci.org/rdeits/EdgeCameras.jl.svg?branch=master)](https://travis-ci.org/rdeits/EdgeCameras.jl)
+[![Build Status](https://travis-ci.com/rdeits/EdgeCameras.jl.svg?branch=master)](https://travis-ci.com/rdeits/EdgeCameras.jl)
 [![codecov.io](https://codecov.io/github/rdeits/EdgeCameras.jl/coverage.svg?branch=master)](https://codecov.io/github/rdeits/EdgeCameras.jl?branch=master)
 
 This project consists of an implementation of *edge cameras* based on the work of Bouman et al. [1]. An edge camera is formed when a sharp edge (such as the corner of a wall) creates a natural one-dimensonal pinhole camera, revealing the motions of objects which are completely obscured by the corner. More information from the original authors can be found at [people.csail.mit.edu](https://people.csail.mit.edu/klbouman/cornercameras.html).
