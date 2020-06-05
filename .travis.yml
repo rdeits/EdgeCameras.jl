@@ -21,7 +21,7 @@ branches:
     - master
 
 before_script:
-  - julia -e 'using Pkg; Pkg.activate("notebooks"); include("notebooks/data_dependencies.jl"); datadep"bouman_edge_cameras_data";'
+  - julia -e 'using Pkg; Pkg.activate("notebooks"); Pkg.instantiate(verbose=true); include("notebooks/data_dependencies.jl"); datadep"bouman_edge_cameras_data";'
 after_success:
   # push coverage results to Codecov
 - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
