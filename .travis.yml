@@ -18,8 +18,10 @@ branches:
     - master
 
 before_script:
-  - julia -e 'using Pkg; Pkg.activate("notebooks"); Pkg.instantiate(verbose=true)'
-  - env -u CI julia -e 'using Pkg; Pkg.activate("notebooks"); include("notebooks/data_dependencies.jl"); datadep"bouman_edge_cameras_data";'
+  - mkdir -p ~/.julia/datadeps
+  - pushd ~/.julia/datadeps
+  - curl "https://people.csail.mit.edu/klbouman/pw/projects/cornercam/example_videos.zip"
+  - unzip example_videos.zip
 after_success:
   # push coverage results to Codecov
 - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
