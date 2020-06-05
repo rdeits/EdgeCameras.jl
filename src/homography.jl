@@ -1,8 +1,9 @@
 struct Homography2D{T, M <: AbstractMatrix{T}} <: Transformation
   H::M
-end
 
-Homography2D(H::M) where {T, M <: AbstractMatrix{T}} = Homography2D{T, M}(H)
+  Homography2D{T, M}(H) where {T, M <: AbstractMatrix{T}} = new{T, M}(H)
+  Homography2D(H::M) where {T, M <: AbstractMatrix{T}} = new{T, M}(H)
+end
 
 Base.inv(H::Homography2D) = Homography2D(inv(H.H))
 
@@ -14,7 +15,7 @@ end
 
 const DEFAULT_CORNERS = [[0, 0], [0, 1], [1, 1], [1, 0]]
 
-function rectify(original_corners, 
+function rectify(original_corners,
                  desired_corners = DEFAULT_CORNERS)
     @assert length(original_corners) == length(desired_corners)
     N = length(original_corners)

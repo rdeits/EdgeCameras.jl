@@ -1,5 +1,3 @@
-__precompile__(false)  # https://github.com/kmsquire/VideoIO.jl/pull/114
-
 module EdgeCameras
 
 export StaticSource,
